@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { api } from './api.js';
+import { api, API_BASE } from './api.js';
 import { io } from 'socket.io-client';
 import QuickKartLogo from './QuickKartLogo.jsx';
 
@@ -18,7 +18,7 @@ export default function PartnerApp({ session, onLogout }) {
   useEffect(() => {
     api.get('/partner/me').then((d) => setPartner(d.partner)).catch((e) => setMsg(e.message));
     load();
-    socketRef.current = io('/', { path: '/socket.io' });
+    socketRef.current = io(API_BASE || window.location.origin, { path: '/socket.io' });
     return () => { socketRef.current?.disconnect(); if (watchId.current) navigator.geolocation.clearWatch(watchId.current); };
   }, []);
 

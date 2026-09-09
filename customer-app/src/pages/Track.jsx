@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import L from 'leaflet';
 import { io } from 'socket.io-client';
-import { api } from '../api.js';
+import { api, API_BASE } from '../api.js';
 import QuickKartLogo from '../components/QuickKartLogo.jsx';
 
 const STEPS = [
@@ -27,7 +27,7 @@ export default function Track() {
     load();
     const poll = setInterval(load, 5000);
 
-    socketRef.current = io('/', { path: '/socket.io' });
+    socketRef.current = io(API_BASE || window.location.origin, { path: '/socket.io' });
     socketRef.current.emit('join_order', { orderId: Number(id) });
     socketRef.current.on('partner:location', ({ lat, lng }) => setPos({ lat, lng }));
     socketRef.current.on('order:update', () => load());
