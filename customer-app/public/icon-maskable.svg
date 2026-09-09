@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="qkGradM" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="boltGradM" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#qkGradM)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" transform="translate(25, 25) scale(0.9)">
+    <path d="M110 140 h50 l45 180 h170 l35 -130 H195" />
+    <circle cx="215" cy="390" r="22" fill="#ffffff" stroke="none" />
+    <circle cx="365" cy="390" r="22" fill="#ffffff" stroke="none" />
+  </g>
+  <polygon points="285,125 240,215 290,215 258,295 340,190 290,190" fill="url(#boltGradM)"/>
+</svg>

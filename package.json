@@ -1,0 +1,19 @@
+{
+  "name": "quickkart",
+  "version": "1.0.0",
+  "description": "QuickKart — Groceries. Delivered Quickly. Full Stack Quick-Commerce Platform",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run customer-app\" \"npm run ops-app\"",
+    "server": "cd server && npm run dev",
+    "customer-app": "cd customer-app && npm run dev",
+    "ops-app": "cd ops-app && npm run dev"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "socket.io": "^4.7.0",
+    "node-sqlite3": "^9.1.0",
+    "firebase": "^10.0.0",
+    "razorpay": "^2.0.0"
+  }
+}
