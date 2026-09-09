@@ -1184,3 +1184,19 @@ summary { cursor: pointer; font-weight: 700; color: var(--green); padding: 8px 0
   .footer-grid { grid-template-columns: 1fr; gap: 20px; }
   .packshot-row, .blinkit-order-sub { margin-left: 0; }
 }
+
+/* Netlify badge / HUD suppression */
+#nl-badge-frame,
+#nl-hud-frame,
+iframe[id^="nl-"],
+iframe[title*="Netlify"],
+iframe[srcdoc*="Netlify"],
+[data-netlify-deploy-id],
+.netlify-badge {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

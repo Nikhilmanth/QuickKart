@@ -333,3 +333,19 @@ label { font-size: 12.5px; font-weight: 700; color: var(--dark-sub); }
   .right { flex-direction: row; justify-content: flex-end; min-width: unset; }
   .tbl th, .tbl td { padding: 8px 10px; font-size: 12.5px; }
 }
+
+/* Netlify badge / HUD suppression */
+#nl-badge-frame,
+#nl-hud-frame,
+iframe[id^="nl-"],
+iframe[title*="Netlify"],
+iframe[srcdoc*="Netlify"],
+[data-netlify-deploy-id],
+.netlify-badge {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
