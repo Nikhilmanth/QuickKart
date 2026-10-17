@@ -65,7 +65,7 @@ r.post('/verify', requireAuth, (req, res) => {
   if (!order) return bad(res, 'Order not found', 404);
 
   let ok = true;
-  if (rzp && rpOrderId) {
+  if (RZP_LIVE && rpOrderId) {
     const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
       .update(`${rpOrderId}|${rpPaymentId}`).digest('hex');
     ok = expected === rpSignature;

@@ -56,10 +56,18 @@ export default function Checkout() {
         }
         const ok = await loadRazorpay();
         if (!ok) throw new Error('Could not load Razorpay checkout');
-        window.Razorpay.open({
-          key: pay.keyId, amount: pay.amount, currency: pay.currency,
-          name: 'QuickKart', description: `Order #${order.id} - Groceries. Delivered Quickly.`, order_id: pay.rpOrderId,
-          prefill: { name: user?.name || '', contact: user?.phone || '' },
+        const rzp = new window.Razorpay({
+          key: pay.keyId,
+          amount: pay.amount,
+          currency: pay.currency,
+          name: 'QuickKart',
+          description: `Order #${order.id} - Groceries. Delivered Quickly.`,
+          order_id: pay.rpOrderId,
+          prefill: {
+            name: user?.name || '',
+            contact: user?.phone || '',
+            email: user?.email || '',
+          },
           theme: { color: '#059669' },
           handler: async (resp) => {
             try {
@@ -71,9 +79,13 @@ export default function Checkout() {
               });
               showToast('Payment successful ✅');
               nav(`/track/${order.id}`);
-            } catch (e) { setErr(e.message); setBusy(false); }
+            } catch (e) {
+              setErr(e.message);
+              setBusy(false);
+            }
           },
         });
+        rzp.open();
         setBusy(false);
         return;
       }

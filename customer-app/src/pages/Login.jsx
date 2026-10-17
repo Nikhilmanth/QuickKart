@@ -211,17 +211,16 @@ export default function Login() {
               className={`auth-tab ${authMethod === 'phone' ? 'active' : ''}`}
               onClick={() => switchMethod('phone')}
             >
-              📱 Mobile SMS
+              📱 Mobile SMS <span className="tab-badge-soon">Soon</span>
             </button>
           </div>
         )}
 
         {step === 'input' ? (
           <>
-            <h2>Groceries. Delivered Quickly.</h2>
-            
             {authMethod === 'email' ? (
               <>
+                <h2>Groceries. Delivered Quickly.</h2>
                 <label>Email Address</label>
                 <input
                   type="email"
@@ -235,68 +234,82 @@ export default function Login() {
                   onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
                   autoFocus
                 />
+
+                <label>(Optional) Your Name</label>
+                <input
+                  id="name-input"
+                  type="text"
+                  placeholder="e.g. Rahul Sharma"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
+                />
+
+                {err && <div className="err">{err}</div>}
+
+                <button
+                  id="send-otp-btn"
+                  className="btn green big"
+                  disabled={busy || !email.trim()}
+                  onClick={handleSendOtp}
+                >
+                  {busy ? 'Sending OTP to your email…' : '✉️ Send Email OTP'}
+                </button>
+
+                <p className="hint center">
+                  We'll send a 6-digit verification code directly to your email inbox. New here? You'll be registered automatically!
+                </p>
               </>
             ) : (
-              <>
-                <label>Mobile Number</label>
-                <div className="phone-row">
-                  <span className="cc">+91</span>
-                  <input
-                    id="phone-input"
-                    inputMode="numeric"
-                    maxLength={10}
-                    placeholder="98765 43210"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value.replace(/\D/g, ''));
-                      if (err) setErr('');
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                    autoFocus
-                  />
+              <div className="coming-soon-card">
+                <div className="coming-soon-icon-wrap">
+                  <span className="coming-soon-icon">📲</span>
                 </div>
-                {!fbChecking && !fbReady && (
-                  <p className="hint" style={{ color: '#d97706' }}>
-                    ⚠️ SMS OTP requires Firebase setup. Use <strong>Email OTP</strong> above for instant login!
-                  </p>
-                )}
-              </>
+                <div className="coming-soon-badge">
+                  <span>🚀 Coming Soon</span>
+                </div>
+                <h3 className="coming-soon-title">Mobile SMS OTP is Coming Soon!</h3>
+                <p className="coming-soon-desc">
+                  We are actively upgrading our telecom SMS gateway to deliver instantaneous login verification & WhatsApp alerts directly to your mobile phone.
+                </p>
+
+                <div className="coming-soon-features">
+                  <div className="coming-soon-feature-item">
+                    <div className="coming-soon-icon-box">⚡</div>
+                    <div>
+                      <strong>Instant 10-Second Delivery</strong>
+                      <span>Direct carrier routes for lightning-fast SMS codes</span>
+                    </div>
+                  </div>
+                  <div className="coming-soon-feature-item">
+                    <div className="coming-soon-icon-box">💬</div>
+                    <div>
+                      <strong>WhatsApp OTP Integration</strong>
+                      <span>Seamless 1-tap verification via official WhatsApp</span>
+                    </div>
+                  </div>
+                  <div className="coming-soon-feature-item">
+                    <div className="coming-soon-icon-box">🛡️</div>
+                    <div>
+                      <strong>SIM-Level Security</strong>
+                      <span>Carrier-grade 2FA protection against account takeover</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn green big coming-soon-cta"
+                  onClick={() => switchMethod('email')}
+                >
+                  ✉️ Use Email OTP Instead (Instant & Active)
+                </button>
+
+                <p className="hint center" style={{ marginTop: 10 }}>
+                  ⚡ Real-time email OTP is 100% active. Codes arrive in your inbox in seconds!
+                </p>
+              </div>
             )}
-
-            <label>(Optional) Your Name</label>
-            <input
-              id="name-input"
-              type="text"
-              placeholder="e.g. Rahul Sharma"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-            />
-
-            {err && <div className="err">{err}</div>}
-
-            <button
-              id="send-otp-btn"
-              className="btn green big"
-              disabled={
-                busy ||
-                (authMethod === 'email' && !email.trim()) ||
-                (authMethod === 'phone' && (phone.length !== 10 || (!fbReady && !fbChecking)))
-              }
-              onClick={handleSendOtp}
-            >
-              {busy
-                ? 'Sending OTP to your email…'
-                : authMethod === 'email'
-                ? '✉️ Send Email OTP'
-                : '📱 Send SMS OTP'}
-            </button>
-
-            {authMethod === 'phone' && <div id="recaptcha-container"></div>}
-
-            <p className="hint center">
-              We'll send a 6-digit verification code directly to your email inbox. New here? You'll be registered automatically!
-            </p>
           </>
         ) : (
           <>

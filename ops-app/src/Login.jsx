@@ -231,7 +231,7 @@ export default function Login({ onLogin }) {
               style={{ padding: '7px 10px', fontSize: '13px' }}
               onClick={() => switchMethod('sms')}
             >
-              📱 Mobile SMS
+              📱 Mobile SMS <span className="tab-badge-soon">Soon</span>
             </button>
           </div>
         )}
@@ -252,62 +252,66 @@ export default function Login({ onLogin }) {
                   onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
                   autoFocus
                 />
+
+                <label>(Optional) Name</label>
+                <input
+                  type="text"
+                  placeholder={tab === 'ADMIN' ? 'Admin User' : 'Partner Name'}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
+                />
+
+                {err && <div className="err">{err}</div>}
+
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy || !email.trim()}
+                  onClick={handleSendOtp}
+                >
+                  {busy ? 'Sending OTP…' : '✉️ Send Email OTP'}
+                </button>
               </>
             ) : (
-              <>
-                <label>{tab === 'ADMIN' ? 'Admin Mobile Number' : 'Partner Mobile Number'}</label>
-                <div className="row">
-                  <span className="cc">+91</span>
-                  <input
-                    inputMode="numeric"
-                    maxLength={10}
-                    placeholder="99999 99999"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value.replace(/\D/g, ''));
-                      if (err) setErr('');
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                    autoFocus
-                  />
+              <div className="coming-soon-card">
+                <div className="coming-soon-icon-wrap">
+                  <span className="coming-soon-icon">📲</span>
                 </div>
-                {!fbChecking && !fbReady && (
-                  <p style={{ fontSize: '12px', color: '#d97706', margin: '4px 0' }}>
-                    ⚠️ SMS OTP requires Firebase. Use <strong>Email OTP</strong> above for instant login!
-                  </p>
-                )}
-              </>
+                <div className="coming-soon-badge">
+                  <span>🚀 Coming Soon</span>
+                </div>
+                <h3 className="coming-soon-title">Mobile SMS Login is Coming Soon!</h3>
+                <p className="coming-soon-desc">
+                  Carrier SMS gateway integration for {tab === 'ADMIN' ? 'Admin' : 'Delivery Partner'} portal is currently in development.
+                </p>
+
+                <div className="coming-soon-features">
+                  <div className="coming-soon-feature-item">
+                    <div className="coming-soon-icon-box">⚡</div>
+                    <div>
+                      <strong>Instant 10-Second SMS</strong>
+                      <span>Direct carrier OTP for instant field login</span>
+                    </div>
+                  </div>
+                  <div className="coming-soon-feature-item">
+                    <div className="coming-soon-icon-box">💬</div>
+                    <div>
+                      <strong>WhatsApp OTP Alerts</strong>
+                      <span>Real-time duty & order dispatch alerts</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => switchMethod('email')}
+                >
+                  ✉️ Use Email OTP (Active & Instant)
+                </button>
+              </div>
             )}
-
-            <label>(Optional) Name</label>
-            <input
-              type="text"
-              placeholder={tab === 'ADMIN' ? 'Admin User' : 'Partner Name'}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-            />
-
-            {err && <div className="err">{err}</div>}
-
-            <button
-              type="button"
-              className="btn"
-              disabled={
-                busy ||
-                (authMethod === 'email' && !email.trim()) ||
-                (authMethod === 'sms' && (phone.length !== 10 || (!fbReady && !fbChecking)))
-              }
-              onClick={handleSendOtp}
-            >
-              {busy
-                ? 'Sending OTP…'
-                : authMethod === 'email'
-                ? '✉️ Send Email OTP'
-                : '📱 Send SMS OTP'}
-            </button>
-
-            {authMethod === 'sms' && <div id="recaptcha-container"></div>}
           </>
         ) : (
           <>
