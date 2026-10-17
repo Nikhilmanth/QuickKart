@@ -4,6 +4,9 @@
   "description": "QuickKart — Groceries. Delivered Quickly. Full Stack Quick-Commerce Platform",
   "private": true,
   "scripts": {
+    "build": "cd customer-app && npm run build",
+    "build:customer": "cd customer-app && npm run build",
+    "build:ops": "cd ops-app && npm run build",
     "dev": "concurrently \"npm run server\" \"npm run customer-app\" \"npm run ops-app\"",
     "server": "cd server && npm run dev",
     "customer-app": "cd customer-app && npm run dev",
