@@ -5,6 +5,22 @@ import { useApp } from '../store.jsx';
 import LocationPicker from '../components/LocationPicker.jsx';
 import QuickKartLogo from '../components/QuickKartLogo.jsx';
 
+const SEARCH_ITEMS = [
+  'paneer',
+  'milk',
+  'bread',
+  'curd',
+  'amul butter',
+  'atta',
+  'lays chips',
+  'maggi noodles',
+  'eggs',
+  'ice cream',
+  'chocolates',
+  'cold drinks',
+  'fresh fruits',
+];
+
 export default function Home() {
   const { user, cart, location, addToCart, updateQty } = useApp();
   const nav = useNavigate();
@@ -16,7 +32,19 @@ export default function Home() {
   const [showCart, setShowCart] = useState(false);
   const [showLoc, setShowLoc] = useState(false);
   const [showAcct, setShowAcct] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // 'help' | 'terms' | 'privacy' | 'perks' | null
+  const [tickerIndex, setTickerIndex] = useState(0);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef(null);
   const productsRef = useRef(null);
+
+  // Blinkit-style placeholder auto-scroll upwards
+  useEffect(() => {
+    const t = setInterval(() => {
+      setTickerIndex((prev) => (prev + 1) % SEARCH_ITEMS.length);
+    }, 2600);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     api.get('/catalog/categories').then((d) => setCategories(d.categories || [])).catch(() => {});
@@ -79,18 +107,46 @@ export default function Home() {
             </div>
           </button>
 
-          <div className="blinkit-search-container">
-            <span className="blinkit-search-glass">🔍</span>
+          {/* Animated Blinkit Search Bar */}
+          <div
+            className={`blinkit-search-container ${isSearchFocused ? 'focused' : ''}`}
+            onClick={() => searchInputRef.current?.focus()}
+          >
+            <span className="blinkit-search-glass" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
             <input
+              ref={searchInputRef}
               className="blinkit-header-search"
-              placeholder='Search "rice", "milk", "lays", "maggi", "amul", "atta", "paneer"...'
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              aria-label="Search items"
             />
+            {!query && (
+              <div className="blinkit-ticker-container" aria-hidden="true">
+                <span className="blinkit-ticker-prefix">Search</span>
+                <span className="blinkit-ticker-clip">
+                  <span key={tickerIndex} className="blinkit-ticker-item">
+                    "{SEARCH_ITEMS[tickerIndex]}"
+                  </span>
+                </span>
+              </div>
+            )}
             {query && (
               <button
                 className="blinkit-search-clear-btn"
-                onClick={() => setQuery('')}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuery('');
+                  searchInputRef.current?.focus();
+                }}
+                title="Clear search"
               >
                 ✕
               </button>
@@ -452,19 +508,18 @@ export default function Home() {
           <div className="footer-col">
             <h4>QuickKart Perks</h4>
             <ul>
-              <li>⚡ 10-Minute Instant Delivery</li>
-              <li>🌱 100% Quality Produce Guarantee</li>
-              <li>🛡️ Contactless &amp; OTP Secure Delivery</li>
-              <li>💳 Cash on Delivery &amp; UPI / Cards</li>
+              <li onClick={() => setActiveModal('perks')} style={{ cursor: 'pointer' }} title="Learn more about our 10-minute delivery guarantee">⚡ 10-Minute Instant Delivery</li>
+              <li onClick={() => setActiveModal('perks')} style={{ cursor: 'pointer' }} title="Learn more about our quality produce">🌱 100% Quality Produce Guarantee</li>
+              <li onClick={() => setActiveModal('perks')} style={{ cursor: 'pointer' }} title="Learn more about OTP secure handoff">🛡️ Contactless &amp; OTP Secure Delivery</li>
+              <li onClick={() => setActiveModal('perks')} style={{ cursor: 'pointer' }} title="Learn more about payment options">💳 Cash on Delivery &amp; UPI / Cards</li>
             </ul>
           </div>
           <div className="footer-col">
             <h4>Customer Care</h4>
             <ul>
-              <li>Help &amp; Support</li>
-              <li>Terms &amp; Conditions</li>
-              <li>Privacy Policy</li>
-              <li><a href={import.meta.env.VITE_OPS_URL || "http://localhost:3001"} target="_blank" rel="noreferrer" style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>Partner & Ops Portal ↗</a></li>
+              <li onClick={() => setActiveModal('help')} style={{ cursor: 'pointer' }}>Help &amp; Support</li>
+              <li onClick={() => setActiveModal('terms')} style={{ cursor: 'pointer' }}>Terms &amp; Conditions</li>
+              <li onClick={() => setActiveModal('privacy')} style={{ cursor: 'pointer' }}>Privacy Policy</li>
             </ul>
           </div>
         </div>
@@ -473,6 +528,146 @@ export default function Home() {
           <div style={{ color: '#059669', fontWeight: 700 }}>Groceries. Delivered Quickly. ⚡</div>
         </div>
       </footer>
+
+      {/* Info Modals (Help, Terms, Privacy, Perks) */}
+      {activeModal && (
+        <div className="qk-modal-backdrop" onClick={() => setActiveModal(null)}>
+          <div className="qk-info-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="qk-info-modal-header">
+              <h3>
+                {activeModal === 'help' && '🎧 Help & 24x7 Customer Support'}
+                {activeModal === 'terms' && '📜 Terms & Conditions'}
+                {activeModal === 'privacy' && '🔒 Privacy & Data Policy'}
+                {activeModal === 'perks' && '✨ QuickKart Perks & Guarantees'}
+              </h3>
+              <button
+                className="qk-info-modal-close"
+                onClick={() => setActiveModal(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="qk-info-modal-body">
+              {activeModal === 'help' && (
+                <div className="qk-info-content">
+                  <div className="qk-info-badge">QuickKart 24/7 Care</div>
+                  <h4>How can we help you today?</h4>
+                  <p>Our customer experience team is always ready to ensure your groceries reach you fast, fresh, and hassle-free.</p>
+                  
+                  <div className="qk-faq-section">
+                    <div className="qk-faq-item">
+                      <b>⏱️ Where is my order?</b>
+                      <p>You can track live order progress in the <strong>My Orders</strong> section under your account profile.</p>
+                    </div>
+                    <div className="qk-faq-item">
+                      <b>📦 Damaged or missing item?</b>
+                      <p>We offer instant, no-questions-asked refunds or replacement for any quality or missing item issue.</p>
+                    </div>
+                    <div className="qk-faq-item">
+                      <b>💳 Payment or refund query?</b>
+                      <p>UPI and card refunds are settled instantly back to your source account within 2-4 hours.</p>
+                    </div>
+                  </div>
+
+                  <div className="qk-contact-cards">
+                    <div className="qk-contact-card">
+                      <span className="qk-contact-icon">📞</span>
+                      <div>
+                        <b>Call Support (Toll-Free)</b>
+                        <div className="muted">1800-QUICK-KART (9 AM - 11 PM)</div>
+                      </div>
+                    </div>
+                    <div className="qk-contact-card">
+                      <span className="qk-contact-icon">✉️</span>
+                      <div>
+                        <b>Email Support</b>
+                        <div className="muted">support@quickkart.com</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeModal === 'terms' && (
+                <div className="qk-info-content">
+                  <div className="qk-info-badge">Legal &amp; Agreement</div>
+                  <h4>QuickKart Terms of Service</h4>
+                  <p>Last updated: October 2026. By accessing QuickKart apps or placing an order, you agree to these terms:</p>
+                  <ul className="qk-legal-list">
+                    <li><strong>10-Minute Delivery Promise:</strong> Estimated delivery times are computed based on hyperlocal dark store proximity and live traffic conditions. During extreme weather or festive peaks, minor buffer times may apply.</li>
+                    <li><strong>Pricing &amp; Freshness:</strong> All produce prices are inclusive of applicable taxes. In the event of weight variations in fresh fruits/vegetables, you will only be charged for the actual packed quantity.</li>
+                    <li><strong>Cancellations:</strong> Orders can be cancelled free of charge prior to dark store dispatch. Once out for delivery, cancellations are subject to partner routing.</li>
+                    <li><strong>User Account:</strong> Users are responsible for safeguarding their login credentials and OTP codes. Never share your OTP with anyone, including delivery partners.</li>
+                  </ul>
+                </div>
+              )}
+
+              {activeModal === 'privacy' && (
+                <div className="qk-info-content">
+                  <div className="qk-info-badge">Your Privacy Matters</div>
+                  <h4>Privacy &amp; Data Protection Policy</h4>
+                  <p>At QuickKart, protecting your personal information and delivery privacy is our top priority.</p>
+                  <ul className="qk-legal-list">
+                    <li><strong>What We Collect:</strong> Only information essential to fulfilling your grocery orders: your delivery address, mobile/email for OTP authentication, and order history.</li>
+                    <li><strong>No Spam &amp; No Third-Party Sales:</strong> We strictly never sell, rent, or trade your personal data to advertisers or third-party marketing companies.</li>
+                    <li><strong>Secure One-Time Passwords:</strong> OTP verification codes are generated securely, transmitted through encrypted TLS channels, and expire within 60 seconds.</li>
+                    <li><strong>Address Encryption:</strong> Your precise GPS location and saved addresses are stored encrypted and shared with assigned delivery partners only during active fulfillment.</li>
+                  </ul>
+                </div>
+              )}
+
+              {activeModal === 'perks' && (
+                <div className="qk-info-content">
+                  <div className="qk-info-badge">The QuickKart Advantage</div>
+                  <h4>Why Millions Choose QuickKart</h4>
+                  <div className="qk-perks-grid">
+                    <div className="qk-perk-card">
+                      <div className="qk-perk-icon">⚡</div>
+                      <div>
+                        <b>10-Minute Hyperlocal Delivery</b>
+                        <p>Our dedicated network of neighborhood micro-fulfillment dark stores ensures your essentials reach your doorstep in minutes.</p>
+                      </div>
+                    </div>
+                    <div className="qk-perk-card">
+                      <div className="qk-perk-icon">🌱</div>
+                      <div>
+                        <b>100% Quality Produce Guarantee</b>
+                        <p>Direct farm sourcing, temperature-controlled cold chains, and strict freshness grading ensure you get only the finest items.</p>
+                      </div>
+                    </div>
+                    <div className="qk-perk-card">
+                      <div className="qk-perk-icon">🛡️</div>
+                      <div>
+                        <b>Safe &amp; Contactless OTP Delivery</b>
+                        <p>Verified delivery partners and secure OTP authentication for complete peace of mind and handoff safety.</p>
+                      </div>
+                    </div>
+                    <div className="qk-perk-card">
+                      <div className="qk-perk-icon">💳</div>
+                      <div>
+                        <b>Flexible &amp; Zero-Fee Payments</b>
+                        <p>Pay easily via Google Pay, PhonePe, Paytm, Cards, Net Banking, or choose Cash on Delivery at your doorstep.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="qk-info-modal-footer">
+              <button
+                className="btn green"
+                style={{ width: '100%', padding: '12px' }}
+                onClick={() => setActiveModal(null)}
+              >
+                Got It, Thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

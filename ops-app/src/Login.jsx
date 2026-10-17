@@ -202,7 +202,11 @@ export default function Login({ onLogin }) {
   return (
     <div className="wrap">
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'center', marginBottom: 18, cursor: 'pointer' }}
+          onClick={() => window.location.href = '/'}
+          title="QuickKart Home"
+        >
           <QuickKartLogo size="lg" subtitle="Ops" />
         </div>
 

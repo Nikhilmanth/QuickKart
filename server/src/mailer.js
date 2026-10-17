@@ -11,61 +11,34 @@ export function isEmailConfigured() {
   );
 }
 
-let cachedTransporter = null;
-
 export function getEmailTransporter() {
-  if (cachedTransporter) return cachedTransporter;
-
-  const host = (process.env.EMAIL_HOST || '').trim();
+  const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
   const user = (process.env.EMAIL_USER || '').trim();
-  // Strip any accidental spaces from Google App Passwords
   const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
-  const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
+  const port = parseInt(process.env.EMAIL_PORT, 10) || 587;
 
-  // Use Gmail service if host contains gmail or if service=gmail or user ends with @gmail.com
-  const isGmail =
-    host.includes('gmail') ||
-    (process.env.EMAIL_SERVICE || '').toLowerCase() === 'gmail' ||
-    user.endsWith('@gmail.com');
-
-  if (isGmail) {
-    cachedTransporter = nodemailer.createTransport({
-      service: 'gmail',
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 8000,
-      auth: {
-        user,
-        pass,
-      },
-    });
-    return cachedTransporter;
-  }
-
-  cachedTransporter = nodemailer.createTransport({
+  return nodemailer.createTransport({
     host: host || 'smtp.gmail.com',
-    port,
+    port: port,
     secure: port === 465,
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 8000,
+    requireTLS: port !== 465,
     auth: {
       user,
       pass,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
-  return cachedTransporter;
 }
 
 /**
  * Send real email to recipient using Nodemailer SMTP.
  * ONLY sends to the provided `to` address. No CC, no BCC, no admin copies.
+ * Features automatic dual-port fallback (587 STARTTLS -> 465 SSL) to prevent timeout errors.
  * 
  * @param {Object} options
  * @param {string} options.to - single recipient email address
@@ -77,7 +50,7 @@ export function getEmailTransporter() {
 export async function sendMail({ to, subject, html, text }) {
   if (!isEmailConfigured()) {
     throw new Error(
-      'Email SMTP is not configured. Please add your EMAIL_USER and EMAIL_PASS (e.g. Gmail App Password) to server/.env'
+      'Email SMTP is not configured. Please add your EMAIL_USER and EMAIL_PASS to server/.env'
     );
   }
 
@@ -91,21 +64,63 @@ export async function sendMail({ to, subject, html, text }) {
   if (!from.includes('@')) {
     from = `QuickKart <${process.env.EMAIL_USER}>`;
   }
-  const transporter = getEmailTransporter();
 
+  const user = (process.env.EMAIL_USER || '').trim();
+  const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+
+  // Attempt 1: Port 587 with STARTTLS (fastest and most universally open port)
   try {
-    const info = await transporter.sendMail({
+    const transporter587 = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+    });
+
+    const info = await transporter587.sendMail({
       from,
-      to: recipient, // ONLY the user's entered email
+      to: recipient,
       subject,
       text: text || html?.replace(/<[^>]+>/g, ''),
       html,
     });
 
-    console.log(`[SMTP] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
+    console.log(`[SMTP 587] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
-  } catch (err) {
-    console.error(`[SMTP ERROR] Failed to send email to ${recipient}:`, err.message);
-    throw new Error(`Email delivery failed: ${err.message}`);
+  } catch (err587) {
+    console.warn(`[SMTP 587 warning] ${err587.message}, falling back to port 465...`);
+
+    // Attempt 2: Port 465 with direct SSL fallback
+    try {
+      const transporter465 = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000,
+      });
+
+      const info = await transporter465.sendMail({
+        from,
+        to: recipient,
+        subject,
+        text: text || html?.replace(/<[^>]+>/g, ''),
+        html,
+      });
+
+      console.log(`[SMTP 465] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
+      return { success: true, messageId: info.messageId };
+    } catch (err465) {
+      console.error(`[SMTP ERROR] Both port 587 and 465 failed for ${recipient}:`, err465.message);
+      throw new Error(`Email delivery failed: ${err465.message || err587.message}`);
+    }
   }
 }

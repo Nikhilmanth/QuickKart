@@ -202,7 +202,12 @@ export default function Login() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <div className="brand center" style={{ marginBottom: 16 }}>
+        <div
+          className="brand center"
+          style={{ marginBottom: 16, cursor: 'pointer' }}
+          onClick={() => nav('/')}
+          title="Go to QuickKart Home"
+        >
           <QuickKartLogo size="xl" showTagline={true} />
         </div>
 
