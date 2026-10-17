@@ -36,6 +36,7 @@ export default function Login() {
   const [fbChecking, setFbChecking] = useState(true);
   
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpValidity, setOtpValidity] = useState(60);
   const timerRef = useRef(null);
   const otpInputRef = useRef(null);
 
@@ -62,6 +63,14 @@ export default function Login() {
     }
     return () => clearTimeout(timerRef.current);
   }, [resendCooldown]);
+
+  // Handle 1-minute OTP validity expiration countdown
+  useEffect(() => {
+    if (step === 'otp' && otpValidity > 0) {
+      const t = setTimeout(() => setOtpValidity(otpValidity - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [step, otpValidity]);
 
   // Focus OTP input when transitioning to OTP step
   useEffect(() => {
@@ -109,6 +118,7 @@ export default function Login() {
       }
 
       setStep('otp');
+      setOtpValidity(60); // 1-minute expiration timer
       setResendCooldown(30); // 30s cooldown for resend
     } catch (e) {
       console.error('Send OTP error:', e);
@@ -255,10 +265,6 @@ export default function Login() {
                 >
                   {busy ? 'Sending OTP to your email…' : '✉️ Send Email OTP'}
                 </button>
-
-                <p className="hint center">
-                  We'll send a 6-digit verification code directly to your email inbox. New here? You'll be registered automatically!
-                </p>
               </>
             ) : (
               <div className="coming-soon-card">
@@ -304,22 +310,49 @@ export default function Login() {
                 >
                   ✉️ Use Email OTP Instead (Instant & Active)
                 </button>
-
-                <p className="hint center" style={{ marginTop: 10 }}>
-                  ⚡ Real-time email OTP is 100% active. Codes arrive in your inbox in seconds!
-                </p>
               </div>
             )}
           </>
         ) : (
           <>
             <h2>Enter Verification Code</h2>
-            <p className="muted" style={{ textAlign: 'center', marginBottom: 12 }}>
+            <p className="muted" style={{ textAlign: 'center', marginBottom: 10 }}>
               We've sent a 6-digit code to your inbox at <br />
               <strong style={{ color: '#1c1c1c' }}>
                 {authMethod === 'email' ? email : `+91 ${phone}`}
               </strong>
             </p>
+
+            <div style={{ textAlign: 'center', marginBottom: 14 }}>
+              {otpValidity > 0 ? (
+                <span style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: otpValidity <= 15 ? '#ef4444' : '#059669',
+                  background: otpValidity <= 15 ? '#fef2f2' : '#f0fdf4',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${otpValidity <= 15 ? '#fecaca' : '#bbf7d0'}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}>
+                  ⏱️ Code valid for: <strong>00:{otpValidity < 10 ? '0' : ''}{otpValidity}</strong>
+                </span>
+              ) : (
+                <div style={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: '#ef4444',
+                  background: '#fef2f2',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #fecaca'
+                }}>
+                  ⚠️ OTP has expired (1 min limit). Click "Resend OTP" below for a fresh code.
+                </div>
+              )}
+            </div>
 
             <input
               ref={otpInputRef}
@@ -333,7 +366,7 @@ export default function Login() {
                 setCode(e.target.value.replace(/\D/g, ''));
                 if (err) setErr('');
               }}
-              onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && handleVerifyOtp()}
+              onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && otpValidity > 0 && handleVerifyOtp()}
               autoFocus
             />
 
@@ -342,10 +375,10 @@ export default function Login() {
             <button
               id="verify-otp-btn"
               className="btn green big"
-              disabled={code.length !== 6 || busy}
+              disabled={code.length !== 6 || busy || otpValidity === 0}
               onClick={handleVerifyOtp}
             >
-              {busy ? 'Verifying…' : 'Verify & Continue'}
+              {busy ? 'Verifying…' : otpValidity === 0 ? 'OTP Expired — Resend Below' : 'Verify & Continue'}
             </button>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>

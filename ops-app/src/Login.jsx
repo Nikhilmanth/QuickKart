@@ -33,6 +33,7 @@ export default function Login({ onLogin }) {
   const [fbChecking, setFbChecking] = useState(true);
 
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpValidity, setOtpValidity] = useState(60);
   const timerRef = useRef(null);
   const otpInputRef = useRef(null);
 
@@ -58,6 +59,14 @@ export default function Login({ onLogin }) {
     }
     return () => clearTimeout(timerRef.current);
   }, [resendCooldown]);
+
+  // Countdown timer for 1-minute OTP expiration
+  useEffect(() => {
+    if (step === 'otp' && otpValidity > 0) {
+      const t = setTimeout(() => setOtpValidity(otpValidity - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [step, otpValidity]);
 
   // Focus OTP input on step transition
   useEffect(() => {
@@ -105,6 +114,7 @@ export default function Login({ onLogin }) {
       }
 
       setStep('otp');
+      setOtpValidity(60); // 1-minute expiration timer
       setResendCooldown(30);
     } catch (e) {
       console.error('Ops send OTP error:', e);
@@ -315,12 +325,42 @@ export default function Login({ onLogin }) {
           </>
         ) : (
           <>
-            <label style={{ textAlign: 'center', display: 'block', margin: '6px 0' }}>
+            <label style={{ textAlign: 'center', display: 'block', margin: '6px 0 4px' }}>
               Enter 6-digit OTP sent to <br />
               <strong style={{ color: '#1c1c1c' }}>
                 {authMethod === 'email' ? email : `+91 ${phone}`}
               </strong>
             </label>
+
+            <div style={{ textAlign: 'center', marginBottom: 12 }}>
+              {otpValidity > 0 ? (
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: otpValidity <= 15 ? '#ef4444' : '#059669',
+                  background: otpValidity <= 15 ? '#fef2f2' : '#f0fdf4',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  ⏱️ Valid for: <strong>00:{otpValidity < 10 ? '0' : ''}{otpValidity}</strong>
+                </span>
+              ) : (
+                <div style={{
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#ef4444',
+                  background: '#fef2f2',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid #fecaca'
+                }}>
+                  ⚠️ OTP has expired (1 min limit). Click Resend OTP below.
+                </div>
+              )}
+            </div>
 
             <input
               ref={otpInputRef}
@@ -333,7 +373,7 @@ export default function Login({ onLogin }) {
                 setCode(e.target.value.replace(/\D/g, ''));
                 if (err) setErr('');
               }}
-              onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && handleVerifyOtp()}
+              onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && otpValidity > 0 && handleVerifyOtp()}
               autoFocus
             />
 
@@ -342,10 +382,10 @@ export default function Login({ onLogin }) {
             <button
               type="button"
               className="btn"
-              disabled={code.length !== 6 || busy}
+              disabled={code.length !== 6 || busy || otpValidity === 0}
               onClick={handleVerifyOtp}
             >
-              {busy ? 'Verifying…' : `Log In to ${tab === 'ADMIN' ? 'Admin Portal' : 'Partner App'}`}
+              {busy ? 'Verifying…' : otpValidity === 0 ? 'OTP Expired — Resend Below' : `Log In to ${tab === 'ADMIN' ? 'Admin Portal' : 'Partner App'}`}
             </button>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>

@@ -11,12 +11,16 @@ export function isEmailConfigured() {
   );
 }
 
+let cachedTransporter = null;
+
 export function getEmailTransporter() {
+  if (cachedTransporter) return cachedTransporter;
+
   const host = (process.env.EMAIL_HOST || '').trim();
   const user = (process.env.EMAIL_USER || '').trim();
   // Strip any accidental spaces from Google App Passwords
   const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
-  const port = parseInt(process.env.EMAIL_PORT, 10) || 587;
+  const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 
   // Use Gmail service if host contains gmail or if service=gmail or user ends with @gmail.com
   const isGmail =
@@ -25,24 +29,38 @@ export function getEmailTransporter() {
     user.endsWith('@gmail.com');
 
   if (isGmail) {
-    return nodemailer.createTransport({
+    cachedTransporter = nodemailer.createTransport({
       service: 'gmail',
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 8000,
       auth: {
         user,
         pass,
       },
     });
+    return cachedTransporter;
   }
 
-  return nodemailer.createTransport({
+  cachedTransporter = nodemailer.createTransport({
     host: host || 'smtp.gmail.com',
     port,
     secure: port === 465,
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000,
     auth: {
       user,
       pass,
     },
   });
+  return cachedTransporter;
 }
 
 /**

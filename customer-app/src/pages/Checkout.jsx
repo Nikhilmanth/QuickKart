@@ -16,8 +16,56 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!user) return nav('/login');
-    api.get('/auth/addresses').then((d) => setAddresses(d.addresses));
     if (!cart.items.length) nav('/');
+
+    api.get('/auth/addresses').then((d) => {
+      let combined = d.addresses ? [...d.addresses] : [];
+      try {
+        const stored = localStorage.getItem('quickkart_saved_addresses');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((pa) => {
+              if (!combined.some((c) => c.line1 === pa.address || c.id === pa.id)) {
+                combined.push({
+                  id: pa.id,
+                  label: pa.label,
+                  line1: pa.address,
+                  city: pa.city || 'India',
+                  recipientName: pa.recipientName,
+                  recipientPhone: pa.recipientPhone,
+                  isForSomeoneElse: pa.isForSomeoneElse,
+                  icon: pa.icon || (pa.isForSomeoneElse ? '👥' : '🏠'),
+                });
+              }
+            });
+          }
+        }
+      } catch {}
+
+      setAddresses(combined);
+
+      // Auto-select active location from header / LocationPicker
+      if (location?.address) {
+        const matched = combined.find((a) => a.line1 === location.address || a.id === location.id);
+        if (matched) {
+          setSel(matched.id);
+        } else {
+          setForm({
+            label: location.label || (location.isForSomeoneElse ? location.recipientName : 'Home'),
+            line1: location.address,
+            city: location.city || '',
+            recipientName: location.recipientName || '',
+            recipientPhone: location.recipientPhone || '',
+            isForSomeoneElse: location.isForSomeoneElse,
+            lat: location.lat ?? null,
+            lng: location.lng ?? null,
+          });
+        }
+      } else if (combined.length > 0) {
+        setSel(combined[0].id);
+      }
+    }).catch(() => {});
   }, []);
 
   const saveAddress = async () => {
@@ -110,7 +158,17 @@ export default function Checkout() {
           {addresses.map((a) => (
             <label key={a.id} className={`addr ${sel === a.id ? 'sel' : ''}`}>
               <input type="radio" checked={sel === a.id} onChange={() => setSel(a.id)} />
-              <div><b>{a.label}</b><div className="muted">{a.line1}, {a.city}</div></div>
+              <div>
+                <b>
+                  {a.icon || '📍'} {a.label}{' '}
+                  {a.isForSomeoneElse && a.recipientName && (
+                    <span style={{ fontSize: '11px', color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, marginLeft: '6px' }}>
+                      🎁 For {a.recipientName} {a.recipientPhone ? `(${a.recipientPhone})` : ''}
+                    </span>
+                  )}
+                </b>
+                <div className="muted">{a.line1}</div>
+              </div>
             </label>
           ))}
           <details open={!addresses.length}>

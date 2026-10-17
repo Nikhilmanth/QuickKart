@@ -5,12 +5,12 @@ import { sendMail } from '../mailer.js';
 import { sessionForIdentifier } from './auth.js';
 
 const r = Router();
-const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const OTP_TTL_MS = 1 * 60 * 1000; // 1 minute (60 seconds) validity
 
 // In-memory store for email OTPs: Map<email, { code: string, expiresAt: number } >
 const otpStore = new Map();
 
-// Periodic cleanup of expired OTP entries every 60 seconds
+// Periodic cleanup of expired OTP entries every 30 seconds
 setInterval(() => {
   const now = Date.now();
   for (const [email, record] of otpStore.entries()) {
@@ -18,7 +18,7 @@ setInterval(() => {
       otpStore.delete(email);
     }
   }
-}, 60 * 1000).unref();
+}, 30 * 1000).unref();
 
 /**
  * Helper to build branded QuickKart HTML email
@@ -35,7 +35,7 @@ function buildOtpEmailHtml(code) {
       <div style="background: #f0fdf4; border: 2px dashed #059669; border-radius: 12px; padding: 18px; text-align: center; margin: 0 0 20px;">
         <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #059669; display: inline-block;">${code}</span>
       </div>
-      <p style="font-size: 13px; color: #64748b; text-align: center; margin: 0 0 16px;">⏱️ This code will expire in <strong>5 minutes</strong>. Do not share this code with anyone.</p>
+      <p style="font-size: 13px; color: #ef4444; text-align: center; margin: 0 0 16px; font-weight: 700;">⏱️ This code will expire in <strong>1 minute (60 seconds)</strong>. Do not share this code with anyone.</p>
       <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0 16px;" />
       <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">If you did not request this login code, please ignore this email.</p>
     </div>
@@ -62,20 +62,21 @@ r.post('/send-otp', async (req, res) => {
     const code = String(crypto.randomInt(100000, 1000000));
     const expiresAt = Date.now() + OTP_TTL_MS;
 
-    // Send formatted HTML email via real Nodemailer SMTP
+    // Send formatted HTML email via pooled Nodemailer SMTP
     await sendMail({
       to: email,
       subject: `Your QuickKart Login OTP: ${code}`,
-      text: `Your OTP for QuickKart login is ${code}. It will expire in 5 minutes.`,
+      text: `Your OTP for QuickKart login is ${code}. It will expire in 1 minute.`,
       html: buildOtpEmailHtml(code),
     });
 
-    // Save in in-memory Map only after successful email dispatch
+    // Save in in-memory Map after successful email dispatch
     otpStore.set(email, { code, expiresAt });
 
     res.json({
       success: true,
-      message: 'OTP sent to your email',
+      message: 'OTP sent to your email (valid for 1 minute)',
+      expiresInSeconds: 60,
     });
   } catch (err) {
     console.error('Error in send-otp route:', err.message);
@@ -102,16 +103,16 @@ r.post('/verify-otp', (req, res) => {
 
   const record = otpStore.get(email);
   if (!record) {
-    return bad(res, 'No OTP requested for this email');
+    return bad(res, 'No active OTP found. Please request a new code.');
   }
 
   if (Date.now() > record.expiresAt) {
     otpStore.delete(email);
-    return bad(res, 'OTP has expired');
+    return bad(res, 'OTP has expired (1 minute limit). Please request a new code.');
   }
 
   if (record.code !== code) {
-    return bad(res, 'Invalid OTP');
+    return bad(res, 'Invalid OTP. Please check the code in your email.');
   }
 
   // OTP verified successfully -> delete from store (one-time use only)

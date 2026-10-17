@@ -35,10 +35,12 @@ export default function Home() {
 
   const qtyOf = (id) => cart.items.find((i) => (i.product_id ?? i.id) === id)?.qty || 0;
 
+  const locIcon = location?.icon || (location?.isForSomeoneElse ? '👥' : location?.type === 'work' ? '🏢' : '🏠');
+  const locLabel = location?.label || (location?.isForSomeoneElse ? location.recipientName : 'Home');
   const shortLoc = !location
     ? 'Select delivery address'
-    : location.address.length > 28
-    ? location.address.slice(0, 28) + '…'
+    : location.address.length > 25
+    ? location.address.slice(0, 25) + '…'
     : location.address;
 
   const scrollToProducts = () => productsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,143 +61,147 @@ export default function Home() {
   const freeDeliveryProgress = Math.min(100, Math.round(((cart.items_total || 0) / 199) * 100));
 
   return (
-    <div className="app">
+    <div className="app blinkit-theme">
       {/* Header */}
-      <header className="header">
-        <div className="brand" onClick={() => nav('/')} title="QuickKart — Groceries. Delivered Quickly.">
-          <QuickKartLogo size="md" showTagline={false} />
-        </div>
+      <header className="header blinkit-header">
+        <div className="header-inner">
+          <div className="brand" onClick={() => nav('/')} title="QuickKart — Groceries. Delivered Quickly.">
+            <QuickKartLogo size="md" showTagline={false} />
+          </div>
 
-        <button className="loc-block" onClick={() => setShowLoc(true)} title="Change delivery location">
-          <div className="loc-title">⚡ 10 MINS DELIVERY</div>
-          <div className="loc-sub">📍 {shortLoc} ▾</div>
-        </button>
+          <button className="blinkit-loc-btn" onClick={() => setShowLoc(true)} title="Change delivery location">
+            <div className="blinkit-loc-title">Delivery in 10 minutes</div>
+            <div className="blinkit-loc-subtitle">
+              <span className="blinkit-loc-tag">{locIcon} {locLabel}</span>
+              <span className="blinkit-loc-sep">-</span>
+              <span className="blinkit-loc-addr">{shortLoc}</span>
+              <span className="blinkit-loc-arrow">▾</span>
+            </div>
+          </button>
 
-        <div className="search-wrap">
-          <span className="search-ico">🔍</span>
-          <input
-            className="search"
-            placeholder='Search "milk", "lays", "maggi", "amul", "atta", "paneer"...'
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button
-              className="btn ghost small"
-              style={{ padding: '0 8px', fontSize: '12px', border: 'none', background: 'transparent' }}
-              onClick={() => setQuery('')}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {user ? (
-          <div className="acct-wrap">
-            <button className="btn ghost" onClick={() => setShowAcct((s) => !s)}>
-              Account ▾
-            </button>
-            {showAcct && (
-              <>
-                <div className="menu-backdrop" onClick={() => setShowAcct(false)} />
-                <div className="acct-menu">
-                  <div className="acct-head">
-                    <b>My Account</b>
-                    <div className="muted">{user.name ? `${user.name} (${user.phone})` : user.phone}</div>
-                  </div>
-                  <Link to="/orders" onClick={() => setShowAcct(false)}>📦 My Orders</Link>
-                  <button onClick={() => { setShowAcct(false); setShowLoc(true); }}>📍 Delivery Address</button>
-                  <button onClick={logout}>🚪 Log Out</button>
-                </div>
-              </>
+          <div className="blinkit-search-container">
+            <span className="blinkit-search-glass">🔍</span>
+            <input
+              className="blinkit-header-search"
+              placeholder='Search "rice", "milk", "lays", "maggi", "amul", "atta", "paneer"...'
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button
+                className="blinkit-search-clear-btn"
+                onClick={() => setQuery('')}
+              >
+                ✕
+              </button>
             )}
           </div>
-        ) : (
-          <button className="btn ghost" onClick={() => nav('/login')}>
-            Login
-          </button>
-        )}
 
-        <button
-          className="btn green cart-btn"
-          onClick={() => setShowCart(true)}
-        >
-          🛒 {cart.count > 0 ? `${cart.count} item${cart.count === 1 ? '' : 's'} · ₹${cart.total}` : 'My Cart'}
-        </button>
-      </header>
+          <div className="header-actions">
+            {user ? (
+              <div className="acct-wrap">
+                <button className="btn ghost blinkit-acct-btn" onClick={() => setShowAcct((s) => !s)}>
+                  Account ▾
+                </button>
+                {showAcct && (
+                  <>
+                    <div className="menu-backdrop" onClick={() => setShowAcct(false)} />
+                    <div className="acct-menu">
+                      <div className="acct-head">
+                        <b>My Account</b>
+                        <div className="muted">{user.name ? `${user.name} (${user.phone})` : user.phone}</div>
+                      </div>
+                      <Link to="/orders" onClick={() => setShowAcct(false)}>📦 My Orders</Link>
+                      <button onClick={() => { setShowAcct(false); setShowLoc(true); }}>📍 Delivery Address</button>
+                      <button onClick={logout}>🚪 Log Out</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button className="btn ghost blinkit-acct-btn" onClick={() => nav('/login')}>
+                Login
+              </button>
+            )}
 
-      {/* Hero + promo banners */}
-      <div className="page-pad">
-        <section className="hero-main">
-          <div>
-            <div className="hero-badge">⚡ Instant 10-Minute Delivery</div>
-            <h1>Groceries. Delivered Quickly.</h1>
-            <p>
-              Farm-fresh fruits &amp; vegetables, pure Amul &amp; Mother Dairy products, munchies, cold beverages, and daily household staples delivered to your doorstep.
-            </p>
-            <button className="btn light" onClick={scrollToProducts}>
-              Shop Fresh Essentials →
+            <button
+              className="btn green blinkit-cart-btn"
+              onClick={() => setShowCart(true)}
+            >
+              🛒 {cart.count > 0 ? `${cart.count} item${cart.count === 1 ? '' : 's'} · ₹${cart.total}` : 'My Cart'}
             </button>
           </div>
-          <div className="hero-art">🥦🍎🥛⚡🥖</div>
+        </div>
+      </header>
+
+      {/* Main Blinkit Container */}
+      <div className="blinkit-main-wrap">
+        {/* Main Hero Banner: Stock up on daily essentials */}
+        <section className="blinkit-hero-banner">
+          <div className="blinkit-hero-left">
+            <h1 className="blinkit-hero-heading">Stock up on daily essentials</h1>
+            <p className="blinkit-hero-sub">
+              Get farm-fresh goodness &amp; a range of exotic fruits, vegetables, eggs &amp; more
+            </p>
+            <button className="blinkit-shop-now-btn" onClick={scrollToProducts}>
+              Shop Now
+            </button>
+          </div>
+          <div className="blinkit-hero-art">
+            <span className="hero-emoji-basket">🥦🍎🥛🥚🥖</span>
+          </div>
         </section>
 
-        {/* Quick commerce perks bar */}
-        <div className="perks-bar">
-          <div className="perk-item">
-            <div className="perk-icon">⚡</div>
-            <div className="perk-text">
-              <b>10-Minute Delivery</b>
-              <span>Express orders packed &amp; delivered fast</span>
+        {/* 3 Promo Banners in a Row (Photo 3) */}
+        <div className="blinkit-promo-grid">
+          {/* Promo 1: Pharmacy */}
+          <div className="blinkit-promo-card teal" onClick={() => selectCategoryByName('Pharmacy')}>
+            <div className="blinkit-promo-info">
+              <h3>Pharmacy at your doorstep!</h3>
+              <p>Cough syrups, pain relief sprays &amp; more</p>
+              <button className="blinkit-promo-btn" onClick={(e) => { e.stopPropagation(); selectCategoryByName('Pharmacy'); }}>
+                Order Now
+              </button>
             </div>
+            <div className="blinkit-promo-art">💊🩹🧴</div>
           </div>
-          <div className="perk-item">
-            <div className="perk-icon">🌱</div>
-            <div className="perk-text">
-              <b>100% Farm Fresh</b>
-              <span>Directly sourced quality produce</span>
+
+          {/* Promo 2: Pet care */}
+          <div className="blinkit-promo-card amber" onClick={() => selectCategoryByName('Pet Care')}>
+            <div className="blinkit-promo-info">
+              <h3>Pet care supplies at your door</h3>
+              <p>Food, treats, toys &amp; more</p>
+              <button className="blinkit-promo-btn" onClick={(e) => { e.stopPropagation(); selectCategoryByName('Pet Care'); }}>
+                Order Now
+              </button>
             </div>
+            <div className="blinkit-promo-art">🐶🐱🦴</div>
           </div>
-          <div className="perk-item">
-            <div className="perk-icon">🛵</div>
-            <div className="perk-text">
-              <b>Free Delivery over ₹199</b>
-              <span>No delivery charges on standard carts</span>
+
+          {/* Promo 3: Baby care */}
+          <div className="blinkit-promo-card lavender" onClick={() => selectCategoryByName('Baby Care')}>
+            <div className="blinkit-promo-info">
+              <h3>No time for a diaper run?</h3>
+              <p>Get baby care essentials</p>
+              <button className="blinkit-promo-btn" onClick={(e) => { e.stopPropagation(); selectCategoryByName('Baby Care'); }}>
+                Order Now
+              </button>
             </div>
+            <div className="blinkit-promo-art">👶🍼🧸</div>
           </div>
         </div>
 
-        {/* Hero Category Highlights */}
-        <div className="hero-row">
-          <div className="promo emerald">
-            <b>Fresh Fruits &amp; Veggies</b>
-            <span>Kashmiri apples, bananas, potatoes, onions, tomatoes &amp; herbs</span>
-            <button className="btn" onClick={() => selectCategoryByName('Vegetables')}>Explore Produce</button>
+        {/* Category tiles */}
+        <div className="blinkit-cat-section">
+          <div className="cat-section-header">
+            <h2>Shop by Category</h2>
+            <span className="muted" style={{ fontSize: '13px', fontWeight: 600 }}>{categories.length} aisles available</span>
           </div>
-          <div className="promo amber">
-            <b>Dairy, Bread &amp; Eggs</b>
-            <span>Amul Taaza, Gold Milk, butter, paneer, brown bread &amp; farm eggs</span>
-            <button className="btn" onClick={() => selectCategoryByName('Dairy')}>Order Dairy</button>
-          </div>
-          <div className="promo rose">
-            <b>Snacks &amp; Munchies</b>
-            <span>Lay&apos;s Magic Masala, Kurkure, Haldiram&apos;s Bhujia &amp; Oreo cookies</span>
-            <button className="btn" onClick={() => selectCategoryByName('Snacks')}>Browse Snacks</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Category tiles */}
-      <div className="page-pad">
-        <div className="cat-section-header">
-          <h2>Shop by Category</h2>
-          <span className="muted" style={{ fontSize: '13px', fontWeight: 600 }}>{categories.length} aisles available</span>
-        </div>
-        <div className="cat-tiles">
-          <button className={`cat-tile ${!activeCat ? 'active' : ''}`} onClick={() => setActiveCat(null)}>
-            <span className="cat-ico">🛍️</span>
-            <span>All Items</span>
-          </button>
+          <div className="cat-tiles">
+            <button className={`cat-tile ${!activeCat ? 'active' : ''}`} onClick={() => setActiveCat(null)}>
+              <span className="cat-ico">🛍️</span>
+              <span>All Items</span>
+            </button>
           {categories.map((c) => (
             <button
               key={c.id}
@@ -314,6 +320,7 @@ export default function Home() {
           </div>
         )}
       </main>
+    </div>
 
       {/* Cart drawer */}
       {showCart && (
