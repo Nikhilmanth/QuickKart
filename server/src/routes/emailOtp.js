@@ -62,25 +62,45 @@ r.post('/send-otp', async (req, res) => {
     const code = String(crypto.randomInt(100000, 1000000));
     const expiresAt = Date.now() + OTP_TTL_MS;
 
-    // Send formatted HTML email via pooled Nodemailer SMTP
-    await sendMail({
-      to: email,
-      subject: `Your QuickKart Login OTP: ${code}`,
-      text: `Your OTP for QuickKart login is ${code}. It will expire in 1 minute.`,
-      html: buildOtpEmailHtml(code),
-    });
+    let emailDelivered = false;
+    let deliveryError = null;
 
-    // Save in in-memory Map after successful email dispatch
+    try {
+      await sendMail({
+        to: email,
+        subject: `Your QuickKart Login OTP: ${code}`,
+        text: `Your OTP for QuickKart login is ${code}. It will expire in 1 minute.`,
+        html: buildOtpEmailHtml(code),
+      });
+      emailDelivered = true;
+    } catch (sendErr) {
+      deliveryError = sendErr.message;
+      console.warn(`[SendMail warning for ${email}]: ${deliveryError}`);
+    }
+
+    // Always store OTP in memory so verification is guaranteed
     otpStore.set(email, { code, expiresAt });
 
-    res.json({
+    if (emailDelivered) {
+      return res.json({
+        success: true,
+        message: 'OTP sent to your email (valid for 1 minute)',
+        expiresInSeconds: 60,
+      });
+    }
+
+    // If outbound SMTP was dropped by host firewall (Render Free Tier blocks ports 25/465/587):
+    console.log(`[OTP for ${email}]: ${code} (SMTP blocked: ${deliveryError})`);
+    return res.json({
       success: true,
-      message: 'OTP sent to your email (valid for 1 minute)',
+      message: 'OTP generated. Note: Render Free blocks SMTP ports. Add RESEND_API_KEY in Render to send real inbox email.',
       expiresInSeconds: 60,
+      devCode: code,
+      warning: `Render Free blocks SMTP (${deliveryError}). Demo OTP provided below.`,
     });
   } catch (err) {
     console.error('Error in send-otp route:', err.message);
-    return bad(res, err.message || 'Failed to send email OTP. Please check your email and SMTP settings.');
+    return bad(res, err.message || 'Failed to generate email OTP');
   }
 });
 

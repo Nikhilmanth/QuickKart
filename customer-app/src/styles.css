@@ -175,34 +175,114 @@ a { text-decoration: none; color: inherit; }
 
 /* Account dropdown */
 .acct-wrap { position: relative; }
-.acct-menu {
+.acct-menu.blinkit-acct-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 8px);
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: var(--shadow-lg);
-  min-width: 220px;
-  padding: 8px;
+  top: calc(100% + 10px);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  width: 260px;
+  padding: 14px;
   z-index: 120;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
+  animation: qkSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.acct-menu a, .acct-menu button {
+.acct-head {
+  padding: 2px 4px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 8px;
+}
+.acct-head b {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  display: block;
+}
+.acct-head .muted {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.acct-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.acct-item {
   text-align: left;
-  padding: 10px 14px;
+  padding: 8px 10px;
   border: none;
-  background: none;
+  background: transparent;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13.5px;
   cursor: pointer;
-  font-weight: 600;
-  color: var(--dark);
-  transition: background 0.12s;
+  font-weight: 500;
+  color: #334155;
+  transition: all 0.12s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
-.acct-menu a:hover, .acct-menu button:hover { background: var(--green-light); color: var(--green); }
-.acct-head { padding: 10px 14px 12px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.acct-item:hover {
+  background: #f1f5f9;
+  color: #0c831f;
+  font-weight: 600;
+}
+.acct-logout-item {
+  color: #ef4444;
+  margin-top: 4px;
+  border-top: 1px solid #f8fafc;
+  padding-top: 8px;
+}
+.acct-logout-item:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Bottom QR Code Tile (Image 4) */
+.acct-qr-tile {
+  margin-top: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.acct-qr-code {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.acct-qr-info {
+  flex: 1;
+}
+.acct-qr-headline {
+  font-size: 11.5px;
+  color: #1e293b;
+  line-height: 1.3;
+}
+.acct-qr-headline span {
+  display: block;
+  font-weight: 800;
+  color: #2563eb;
+}
+.acct-qr-sub {
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 3px;
+  line-height: 1.2;
+}
 .menu-backdrop { position: fixed; inset: 0; z-index: 110; }
 
 /* ---------- Hero Banner ---------- */
@@ -2308,3 +2388,324 @@ iframe[srcdoc*="Netlify"],
   border-top: 1px solid #f1f5f9;
   background: #ffffff;
 }
+
+/* ==========================================================================
+   Blinkit Login & OTP Modal Interface (Photos 1 & 2)
+   ========================================================================== */
+.login-wrap.blinkit-login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.blinkit-login-modal {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 32px 24px;
+  position: relative;
+  animation: qkSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+/* Back Arrow Button matching Photo 1 & 2 */
+.blinkit-modal-back-btn {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1e293b;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+.blinkit-modal-back-btn:hover {
+  background: #f1f5f9;
+  transform: translateX(-2px);
+}
+
+/* Centered Squircle App Icon matching Photo 1 */
+.blinkit-app-squircle {
+  width: 72px;
+  height: 72px;
+  background: #f8c200;
+  border-radius: 20px;
+  margin: 6px auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(248, 194, 0, 0.45);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.blinkit-app-squircle:hover {
+  transform: scale(1.05);
+}
+.blinkit-app-icon-text {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0c831f;
+  letter-spacing: -0.5px;
+}
+
+/* Headings matching Photo 1 */
+.blinkit-login-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  margin: 0 0 4px;
+  letter-spacing: -0.4px;
+}
+.blinkit-login-subtitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #475569;
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+/* Method Switch Tabs */
+.blinkit-auth-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 20px;
+}
+.blinkit-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.blinkit-tab.active {
+  background: #ffffff;
+  color: #0c831f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Input Fields matching Photo 1 */
+.blinkit-form-body {
+  display: flex;
+  flex-direction: column;
+}
+.blinkit-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  height: 52px;
+  padding: 0 16px;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+.blinkit-input-wrap:focus-within {
+  border-color: #0c831f;
+  box-shadow: 0 0 0 3px rgba(12, 131, 31, 0.12);
+}
+.blinkit-input-prefix {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1e293b;
+  margin-right: 12px;
+  padding-right: 12px;
+  border-right: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+.blinkit-input-field {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0f172a;
+  background: transparent;
+}
+.blinkit-input-field::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Continue Button matching Photo 1 */
+.blinkit-continue-btn {
+  width: 100%;
+  height: 50px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 20px;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.blinkit-continue-btn:disabled {
+  background: #94a3b8;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 0.95;
+}
+.blinkit-continue-btn:not(:disabled) {
+  background: #0c831f;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(12, 131, 31, 0.28);
+}
+.blinkit-continue-btn:not(:disabled):hover {
+  background: #0a6f1a;
+  transform: translateY(-1px);
+}
+
+/* Terms Notice matching Photo 1 */
+.blinkit-terms-text {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  line-height: 1.5;
+}
+.blinkit-terms-text .link-inline {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: #334155;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+.blinkit-terms-text .link-inline:hover {
+  color: #0c831f;
+}
+
+/* ==========================================================================
+   OTP Verification Screen (Photo 2)
+   ========================================================================== */
+.blinkit-otp-header {
+  text-align: center;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+.blinkit-otp-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+.blinkit-otp-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #475569;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.blinkit-otp-recipient {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 4px;
+}
+
+/* Segmented OTP Boxes matching Photo 2 */
+.blinkit-otp-grid {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 0 16px;
+}
+.blinkit-otp-box {
+  width: 48px;
+  height: 54px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+.blinkit-otp-box:focus {
+  border-color: #0c831f;
+  box-shadow: 0 0 0 3px rgba(12, 131, 31, 0.12);
+}
+.blinkit-otp-box.filled {
+  border-color: #0c831f;
+  background: #f0fdf4;
+}
+
+/* Resend Countdown Text matching Photo 2: "Resend Code (in 29 secs)" */
+.blinkit-resend-wrap {
+  text-align: center;
+  margin: 18px 0 6px;
+}
+.blinkit-resend-countdown {
+  font-size: 14px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.blinkit-resend-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0c831f;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: all 0.12s ease;
+}
+.blinkit-resend-btn:hover {
+  text-decoration: underline;
+}
+
+/* Error Banner */
+.blinkit-err-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 14px;
+  text-align: center;
+}
+.blinkit-info-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-top: 10px;
+}
+

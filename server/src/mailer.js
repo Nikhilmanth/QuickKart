@@ -5,15 +5,30 @@ try {
   dns.setDefaultResultOrder('ipv4first');
 } catch (_) {}
 
+/**
+ * Strict IPv4 DNS lookup to guarantee connection over IPv4
+ * (prevents ENETUNREACH / connection timeouts on cloud Linux containers like Render)
+ */
+function lookupIPv4(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  return dns.lookup(hostname, { ...options, family: 4 }, callback);
+}
+
 export function isEmailConfigured() {
+  const hasResend = !!(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim());
+  const hasBrevo = !!(process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.trim());
   const user = (process.env.EMAIL_USER || '').trim();
   const pass = (process.env.EMAIL_PASS || '').trim();
-  return !!(
+  const hasSmtp = !!(
     user &&
     pass &&
     !/your_|placeholder|change_me/i.test(user) &&
     !/your_|placeholder|change_me/i.test(pass)
   );
+  return hasResend || hasBrevo || hasSmtp;
 }
 
 export function getEmailTransporter() {
@@ -27,7 +42,8 @@ export function getEmailTransporter() {
     port: port,
     secure: port === 465,
     requireTLS: port !== 465,
-    family: 4, // Strict IPv4 to prevent ENETUNREACH on cloud environments like Render
+    family: 4,
+    lookup: lookupIPv4,
     auth: {
       user,
       pass,
@@ -42,10 +58,13 @@ export function getEmailTransporter() {
 }
 
 /**
- * Send real email to recipient using Nodemailer SMTP.
+ * Send real email to recipient using Nodemailer SMTP, Resend API, or Brevo API.
  * ONLY sends to the provided `to` address. No CC, no BCC, no admin copies.
- * Features strict IPv4 enforcement (family: 4) and dual-port fallback (465 SSL -> 587 STARTTLS)
- * to prevent cloud IPv6 ENETUNREACH and socket timeouts.
+ * 
+ * Supports:
+ * 1. Resend HTTPS API (Port 443 - zero SMTP port blocking on Render)
+ * 2. Brevo HTTPS API (Port 443 - zero SMTP port blocking on Render)
+ * 3. Direct Gmail SMTP (Ports 465 / 587 with strict IPv4 enforcement)
  * 
  * @param {Object} options
  * @param {string} options.to - single recipient email address
@@ -55,16 +74,69 @@ export function getEmailTransporter() {
  * @returns {Promise<{ success: boolean, messageId: string }>}
  */
 export async function sendMail({ to, subject, html, text }) {
-  if (!isEmailConfigured()) {
-    throw new Error(
-      'Email SMTP is not configured. Please add your EMAIL_USER and EMAIL_PASS to server/.env'
-    );
-  }
-
   // Ensure 'to' is strictly a single, clean email address string
   const recipient = String(to || '').trim().toLowerCase();
   if (!recipient || !recipient.includes('@')) {
     throw new Error('Invalid recipient email address');
+  }
+
+  // 1. Resend HTTPS API (Works on Render Free Tier via Port 443)
+  if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim()) {
+    try {
+      const fromEmail = process.env.EMAIL_FROM || 'QuickKart <onboarding@resend.dev>';
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [recipient],
+          subject,
+          html,
+          text: text || html?.replace(/<[^>]+>/g, ''),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Resend delivery failed');
+      console.log(`[Resend HTTPS] Real email sent to recipient: ${recipient} (Id: ${data.id})`);
+      return { success: true, messageId: data.id };
+    } catch (errResend) {
+      console.warn(`[Resend warning] ${errResend.message}, trying fallbacks...`);
+    }
+  }
+
+  // 2. Brevo HTTPS API (Works on Render Free Tier via Port 443)
+  if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.trim()) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY.trim(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'QuickKart', email: process.env.EMAIL_USER || 'support@quickkart.com' },
+          to: [{ email: recipient }],
+          subject,
+          htmlContent: html,
+          textContent: text || html?.replace(/<[^>]+>/g, ''),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Brevo delivery failed');
+      console.log(`[Brevo HTTPS] Real email sent to recipient: ${recipient} (Id: ${data.messageId})`);
+      return { success: true, messageId: data.messageId };
+    } catch (errBrevo) {
+      console.warn(`[Brevo warning] ${errBrevo.message}, trying fallbacks...`);
+    }
+  }
+
+  if (!isEmailConfigured()) {
+    throw new Error(
+      'Email is not configured. Please add your EMAIL_USER/EMAIL_PASS or RESEND_API_KEY to server/.env'
+    );
   }
 
   let from = process.env.EMAIL_FROM || `QuickKart <${process.env.EMAIL_USER}>`;
@@ -82,6 +154,7 @@ export async function sendMail({ to, subject, html, text }) {
       port: 465,
       secure: true,
       family: 4, // Enforce IPv4
+      lookup: lookupIPv4, // Force DNS resolver to return only IPv4
       auth: { user, pass },
       tls: { rejectUnauthorized: false },
       connectionTimeout: 10000,

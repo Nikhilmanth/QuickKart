@@ -162,14 +162,65 @@ export default function Home() {
                 {showAcct && (
                   <>
                     <div className="menu-backdrop" onClick={() => setShowAcct(false)} />
-                    <div className="acct-menu">
+                    <div className="acct-menu blinkit-acct-menu">
                       <div className="acct-head">
                         <b>My Account</b>
-                        <div className="muted">{user.name ? `${user.name} (${user.phone})` : user.phone}</div>
+                        <div className="muted">{user.phone ? (user.phone.startsWith('+91') ? user.phone : `+91${user.phone}`) : user.email || 'Customer'}</div>
                       </div>
-                      <Link to="/orders" onClick={() => setShowAcct(false)}>📦 My Orders</Link>
-                      <button onClick={() => { setShowAcct(false); setShowLoc(true); }}>📍 Delivery Address</button>
-                      <button onClick={logout}>🚪 Log Out</button>
+
+                      <div className="acct-links-list">
+                        <Link to="/orders" className="acct-item" onClick={() => setShowAcct(false)}>
+                          <span className="acct-item-title">My Orders</span>
+                        </Link>
+                        <button className="acct-item" onClick={() => { setShowAcct(false); setShowLoc(true); }}>
+                          <span className="acct-item-title">Saved Addresses</span>
+                        </button>
+                        <button className="acct-item" onClick={() => { setShowAcct(false); setActiveModal('prescriptions'); }}>
+                          <span className="acct-item-title">My Prescriptions</span>
+                        </button>
+                        <button className="acct-item" onClick={() => { setShowAcct(false); setActiveModal('giftcards'); }}>
+                          <span className="acct-item-title">E-Gift Cards</span>
+                        </button>
+                        <button className="acct-item" onClick={() => { setShowAcct(false); setActiveModal('help'); }}>
+                          <span className="acct-item-title">FAQ's</span>
+                        </button>
+                        <button className="acct-item" onClick={() => { setShowAcct(false); setActiveModal('privacy'); }}>
+                          <span className="acct-item-title">Account Privacy</span>
+                        </button>
+                        <button className="acct-item acct-logout-item" onClick={logout}>
+                          <span className="acct-item-title">Log Out</span>
+                        </button>
+                      </div>
+
+                      {/* Bottom QR Code Box matching Blinkit Photo 4 */}
+                      <div className="acct-qr-tile">
+                        <div className="acct-qr-code">
+                          <svg width="50" height="50" viewBox="0 0 100 100" fill="#1e293b">
+                            <rect width="100" height="100" fill="#ffffff" rx="8" />
+                            <rect x="8" y="8" width="26" height="26" rx="4" fill="#0f172a" />
+                            <rect x="13" y="13" width="16" height="16" rx="2" fill="#ffffff" />
+                            <rect x="17" y="17" width="8" height="8" fill="#0c831f" />
+                            <rect x="66" y="8" width="26" height="26" rx="4" fill="#0f172a" />
+                            <rect x="71" y="13" width="16" height="16" rx="2" fill="#ffffff" />
+                            <rect x="75" y="17" width="8" height="8" fill="#0c831f" />
+                            <rect x="8" y="66" width="26" height="26" rx="4" fill="#0f172a" />
+                            <rect x="13" y="71" width="16" height="16" rx="2" fill="#ffffff" />
+                            <rect x="17" y="75" width="8" height="8" fill="#0c831f" />
+                            <rect x="42" y="12" width="10" height="18" fill="#0f172a" />
+                            <rect x="40" y="38" width="20" height="10" fill="#0f172a" />
+                            <rect x="68" y="44" width="12" height="12" fill="#0c831f" />
+                            <rect x="40" y="68" width="14" height="22" fill="#0f172a" />
+                            <rect x="64" y="68" width="22" height="8" fill="#0f172a" />
+                            <rect x="74" y="82" width="12" height="10" fill="#0c831f" />
+                          </svg>
+                        </div>
+                        <div className="acct-qr-info">
+                          <div className="acct-qr-headline">
+                            Simple way to get groceries <span>at your doorstep</span>
+                          </div>
+                          <div className="acct-qr-sub">Scan the QR code and download QuickKart app</div>
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}
@@ -539,6 +590,8 @@ export default function Home() {
                 {activeModal === 'terms' && '📜 Terms & Conditions'}
                 {activeModal === 'privacy' && '🔒 Privacy & Data Policy'}
                 {activeModal === 'perks' && '✨ QuickKart Perks & Guarantees'}
+                {activeModal === 'prescriptions' && '💊 My Prescriptions'}
+                {activeModal === 'giftcards' && '🎁 QuickKart E-Gift Cards & Balance'}
               </h3>
               <button
                 className="qk-info-modal-close"
@@ -651,6 +704,58 @@ export default function Home() {
                         <p>Pay easily via Google Pay, PhonePe, Paytm, Cards, Net Banking, or choose Cash on Delivery at your doorstep.</p>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeModal === 'prescriptions' && (
+                <div className="qk-info-content">
+                  <div className="qk-info-badge">QuickKart Pharmacy</div>
+                  <h4>My Medical Prescriptions</h4>
+                  <p>Upload and manage doctor prescriptions for prescription-only medicines delivered in 10 minutes.</p>
+                  
+                  <div className="qk-upload-card" style={{ border: '2px dashed #0c831f', borderRadius: 16, padding: '24px 16px', textAlign: 'center', background: '#f0fdf4', margin: '16px 0' }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>📄</div>
+                    <b style={{ color: '#0c831f', display: 'block', marginBottom: 4 }}>Upload New Prescription</b>
+                    <p style={{ fontSize: 12.5, color: '#64748b', margin: '0 0 12px' }}>Supports JPG, PNG, and PDF up to 10MB</p>
+                    <label className="btn green" style={{ display: 'inline-block', padding: '8px 18px', cursor: 'pointer', fontSize: 13 }}>
+                      Choose File
+                      <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={() => alert('Prescription uploaded successfully! Our certified pharmacist will verify it within 2 minutes.')} />
+                    </label>
+                  </div>
+
+                  <div className="qk-faq-item">
+                    <b>🛡️ 100% Certified &amp; Confidential</b>
+                    <p>All prescriptions are verified by licensed registered pharmacists before medicine dispatch.</p>
+                  </div>
+                </div>
+              )}
+
+              {activeModal === 'giftcards' && (
+                <div className="qk-info-content">
+                  <div className="qk-info-badge">QuickKart Cash</div>
+                  <h4>E-Gift Cards &amp; Store Credit</h4>
+                  
+                  <div style={{ background: 'linear-gradient(135deg, #0c831f 0%, #059669 100%)', color: '#ffffff', borderRadius: 16, padding: '20px 24px', margin: '16px 0', boxShadow: '0 8px 20px -4px rgba(12,131,31,0.3)' }}>
+                    <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}>Available Balance</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, margin: '6px 0 12px' }}>₹0.00</div>
+                    <div style={{ fontSize: 12, opacity: 0.9 }}>Linked to: {user?.phone || user?.email || 'Your Account'}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter 16-digit Gift Card / Coupon Code"
+                      style={{ flex: 1, padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 13 }}
+                    />
+                    <button className="btn green" onClick={() => alert('Please enter a valid gift card or voucher code.')}>
+                      Redeem
+                    </button>
+                  </div>
+
+                  <div className="qk-faq-item">
+                    <b>🎁 Send an E-Gift Card</b>
+                    <p>Gift your friends and family instant groceries delivered in 10 minutes. Available in denominations of ₹250, ₹500, ₹1000, and ₹2000.</p>
                   </div>
                 </div>
               )}
