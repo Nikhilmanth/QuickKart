@@ -17,8 +17,22 @@ function lookupIPv4(hostname, options, callback) {
   return dns.lookup(hostname, { ...options, family: 4 }, callback);
 }
 
+export function getGoogleScriptUrl() {
+  return (
+    process.env.GOOGLE_SCRIPT_URL ||
+    process.env.GOOGLE_APPS_SCRIPT_URL ||
+    process.env.GMAIL_SCRIPT_URL ||
+    process.env.GMAIL_RELAY_URL ||
+    process.env.SCRIPT_URL ||
+    process.env.GAS_URL ||
+    process.env.GOOGLE_WEBHOOK_URL ||
+    process.env.WEBHOOK_URL ||
+    ''
+  ).trim();
+}
+
 export function isEmailConfigured() {
-  const hasGas = !!(process.env.GOOGLE_SCRIPT_URL || process.env.GMAIL_RELAY_URL);
+  const hasGas = !!getGoogleScriptUrl();
   const hasResend = !!(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim());
   const hasBrevo = !!(process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.trim());
   const user = (process.env.EMAIL_USER || '').trim();
@@ -52,9 +66,9 @@ export function getEmailTransporter() {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 6000,
-    greetingTimeout: 6000,
-    socketTimeout: 8000,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 7000,
   });
 }
 
@@ -63,7 +77,7 @@ export function getEmailTransporter() {
  * 1. Google Apps Script Webhook (Port 443 HTTPS - 100% Free, sends from user's Gmail)
  * 2. Resend HTTPS API (Port 443 HTTPS - 100% Free, 3000/mo)
  * 3. Brevo HTTPS API (Port 443 HTTPS - 100% Free, 300/day)
- * 4. Nodemailer Gmail SMTP (Direct Port 465 SSL / 587 TLS)
+ * 4. Nodemailer Gmail SMTP (Direct Port 465 SSL / 587 TLS over strict IPv4)
  * 
  * ONLY sends to the provided `to` address. No CC, no BCC, no admin copies.
  * 
@@ -82,9 +96,10 @@ export async function sendMail({ to, subject, html, text }) {
   }
 
   // 1. Google Apps Script Web App HTTPS Relay (Port 443 HTTPS - Never blocked by Render Free)
-  const scriptUrl = (process.env.GOOGLE_SCRIPT_URL || process.env.GMAIL_RELAY_URL || '').trim();
+  const scriptUrl = getGoogleScriptUrl();
   if (scriptUrl) {
     try {
+      console.log(`[Google Apps Script HTTPS] Dispatching email to: ${recipient}`);
       const res = await fetch(scriptUrl, {
         method: 'POST',
         redirect: 'follow',
@@ -158,7 +173,7 @@ export async function sendMail({ to, subject, html, text }) {
 
   if (!isEmailConfigured()) {
     throw new Error(
-      'Email is not configured. Please add EMAIL_USER/EMAIL_PASS, GOOGLE_SCRIPT_URL, or RESEND_API_KEY to server/.env'
+      'Email is not configured. Please add GOOGLE_SCRIPT_URL or EMAIL_USER/EMAIL_PASS to server/.env'
     );
   }
 
@@ -170,47 +185,29 @@ export async function sendMail({ to, subject, html, text }) {
   const user = (process.env.EMAIL_USER || '').trim();
   const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 
-  // 4. Nodemailer standard service: 'gmail' (Instant on local, works when host unblocks SMTP)
-  if (user.endsWith('@gmail.com') || (process.env.EMAIL_HOST || '').includes('gmail')) {
-    try {
-      const gmailTransporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user, pass },
-        connectionTimeout: 5000,
-        greetingTimeout: 5000,
-        socketTimeout: 8000,
-      });
-
-      const info = await gmailTransporter.sendMail({
-        from,
-        to: recipient,
-        subject,
-        text: text || html?.replace(/<[^>]+>/g, ''),
-        html,
-      });
-
-      console.log(`[Nodemailer Gmail] Real email sent to recipient: ${recipient} (MessageId: ${info.messageId})`);
-      return { success: true, messageId: info.messageId };
-    } catch (errGmail) {
-      console.warn(`[Nodemailer Gmail service warning] ${errGmail.message}, trying direct host...`);
+  // 4. Strict IPv4 address resolution to completely prevent IPv6 ENETUNREACH
+  let ipv4Host = 'smtp.gmail.com';
+  try {
+    const addrs = await dns.promises.resolve4('smtp.gmail.com');
+    if (addrs && addrs.length > 0) {
+      ipv4Host = addrs[0];
     }
+  } catch (dnsErr) {
+    console.warn('[DNS resolve4 warning]:', dnsErr.message);
   }
 
-  // 5. Direct host fallback (Port 465 / 587)
   let lastErr = null;
-  const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
   for (const port of [465, 587]) {
     try {
       const transporter = nodemailer.createTransport({
-        host,
+        host: ipv4Host, // Direct IPv4 IP address eliminates IPv6 ENETUNREACH
         port,
         secure: port === 465,
-        family: 4,
         auth: { user, pass },
-        tls: { servername: host, rejectUnauthorized: false },
-        connectionTimeout: 5000,
-        greetingTimeout: 5000,
-        socketTimeout: 8000,
+        tls: { servername: 'smtp.gmail.com', rejectUnauthorized: false },
+        connectionTimeout: 4000,
+        greetingTimeout: 4000,
+        socketTimeout: 6000,
       });
 
       const info = await transporter.sendMail({
@@ -221,7 +218,7 @@ export async function sendMail({ to, subject, html, text }) {
         html,
       });
 
-      console.log(`[SMTP ${port}] Real email sent to recipient: ${recipient} (MessageId: ${info.messageId})`);
+      console.log(`[SMTP ${port} IPv4] Real email sent to recipient: ${recipient} (MessageId: ${info.messageId})`);
       return { success: true, messageId: info.messageId };
     } catch (errPort) {
       lastErr = errPort;
@@ -230,9 +227,9 @@ export async function sendMail({ to, subject, html, text }) {
   }
 
   const errText = String(lastErr?.message || 'SMTP Connection failed');
-  if (/timeout|ETIMEDOUT|ESOCKET/i.test(errText)) {
+  if (/timeout|ETIMEDOUT|ESOCKET|ENETUNREACH/i.test(errText)) {
     throw new Error(
-      'Email delivery timed out. Cloud hosting provider (Render Free) blocks outbound SMTP ports 465/587. Please add GOOGLE_SCRIPT_URL or RESEND_API_KEY in Render environment dashboard.'
+      'Email delivery timed out. Cloud host (Render Free) blocks outbound SMTP ports. Please ensure GOOGLE_SCRIPT_URL is added and saved in your Render Environment Dashboard.'
     );
   }
 
