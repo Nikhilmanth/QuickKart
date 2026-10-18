@@ -1,4 +1,8 @@
 import 'dotenv/config';
+import dns from 'dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (_) {}
 import express from 'express';
 import http from 'http';
 import cors from 'cors';

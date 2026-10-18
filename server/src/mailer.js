@@ -1,4 +1,9 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (_) {}
 
 export function isEmailConfigured() {
   const user = (process.env.EMAIL_USER || '').trim();
@@ -15,13 +20,14 @@ export function getEmailTransporter() {
   const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
   const user = (process.env.EMAIL_USER || '').trim();
   const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
-  const port = parseInt(process.env.EMAIL_PORT, 10) || 587;
+  const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 
   return nodemailer.createTransport({
     host: host || 'smtp.gmail.com',
     port: port,
     secure: port === 465,
     requireTLS: port !== 465,
+    family: 4, // Strict IPv4 to prevent ENETUNREACH on cloud environments like Render
     auth: {
       user,
       pass,
@@ -29,16 +35,17 @@ export function getEmailTransporter() {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 }
 
 /**
  * Send real email to recipient using Nodemailer SMTP.
  * ONLY sends to the provided `to` address. No CC, no BCC, no admin copies.
- * Features automatic dual-port fallback (587 STARTTLS -> 465 SSL) to prevent timeout errors.
+ * Features strict IPv4 enforcement (family: 4) and dual-port fallback (465 SSL -> 587 STARTTLS)
+ * to prevent cloud IPv6 ENETUNREACH and socket timeouts.
  * 
  * @param {Object} options
  * @param {string} options.to - single recipient email address
@@ -68,21 +75,21 @@ export async function sendMail({ to, subject, html, text }) {
   const user = (process.env.EMAIL_USER || '').trim();
   const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 
-  // Attempt 1: Port 587 with STARTTLS (fastest and most universally open port)
+  // Attempt 1: Port 465 (Direct SSL) with strict IPv4 - fast & rock solid on Linux cloud hosts
   try {
-    const transporter587 = nodemailer.createTransport({
+    const transporter465 = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
+      port: 465,
+      secure: true,
+      family: 4, // Enforce IPv4
       auth: { user, pass },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 20000,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
-    const info = await transporter587.sendMail({
+    const info = await transporter465.sendMail({
       from,
       to: recipient,
       subject,
@@ -90,25 +97,27 @@ export async function sendMail({ to, subject, html, text }) {
       html,
     });
 
-    console.log(`[SMTP 587] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
+    console.log(`[SMTP 465 IPv4] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
-  } catch (err587) {
-    console.warn(`[SMTP 587 warning] ${err587.message}, falling back to port 465...`);
+  } catch (err465) {
+    console.warn(`[SMTP 465 warning] ${err465.message}, falling back to port 587 IPv4...`);
 
-    // Attempt 2: Port 465 with direct SSL fallback
+    // Attempt 2: Port 587 (STARTTLS) with strict IPv4 fallback
     try {
-      const transporter465 = nodemailer.createTransport({
+      const transporter587 = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        family: 4, // Enforce IPv4
         auth: { user, pass },
         tls: { rejectUnauthorized: false },
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 20000,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
 
-      const info = await transporter465.sendMail({
+      const info = await transporter587.sendMail({
         from,
         to: recipient,
         subject,
@@ -116,11 +125,12 @@ export async function sendMail({ to, subject, html, text }) {
         html,
       });
 
-      console.log(`[SMTP 465] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
+      console.log(`[SMTP 587 IPv4] Real email sent EXCLUSIVELY to recipient: ${recipient} (MessageId: ${info.messageId})`);
       return { success: true, messageId: info.messageId };
-    } catch (err465) {
-      console.error(`[SMTP ERROR] Both port 587 and 465 failed for ${recipient}:`, err465.message);
+    } catch (err587) {
+      console.error(`[SMTP ERROR] Both port 465 and 587 failed for ${recipient}:`, err587.message);
       throw new Error(`Email delivery failed: ${err465.message || err587.message}`);
     }
   }
 }
+
