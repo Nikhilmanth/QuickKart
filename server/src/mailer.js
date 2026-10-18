@@ -87,7 +87,8 @@ export async function sendMail({ to, subject, html, text }) {
     try {
       const res = await fetch(scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           to: recipient,
           subject,
@@ -95,8 +96,7 @@ export async function sendMail({ to, subject, html, text }) {
           text: text || html?.replace(/<[^>]+>/g, ''),
         }),
       });
-      const data = await res.json().catch(() => ({ success: true }));
-      console.log(`[Google Apps Script HTTPS] Real email sent to recipient: ${recipient}`);
+      console.log(`[Google Apps Script HTTPS] Status ${res.status}. Real email dispatched to recipient: ${recipient}`);
       return { success: true, messageId: `gas-${Date.now()}` };
     } catch (errGas) {
       console.warn(`[Google Apps Script warning] ${errGas.message}, trying fallbacks...`);

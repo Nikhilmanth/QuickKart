@@ -17,6 +17,7 @@ import paymentRoutes, { razorpayMode } from './routes/payments.js';
 import partnerRoutes from './routes/partner.js';
 import adminRoutes from './routes/admin.js';
 import { setIo, orderRoom } from './events.js';
+import { isEmailConfigured } from './mailer.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -32,6 +33,10 @@ app.get('/api/health', (_req, res) => res.json({
   ok: true,
   payments: razorpayMode(),
   time: new Date().toISOString(),
+  email: {
+    configured: isEmailConfigured(),
+    method: process.env.GOOGLE_SCRIPT_URL ? 'GOOGLE_APPS_SCRIPT_HTTPS' : (process.env.RESEND_API_KEY ? 'RESEND_HTTPS' : (process.env.BREVO_API_KEY ? 'BREVO_HTTPS' : 'GMAIL_SMTP')),
+  },
   firebase: !!process.env.FIREBASE_API_KEY,
   firebaseConfig: process.env.FIREBASE_API_KEY ? {
     apiKey: process.env.FIREBASE_API_KEY,
