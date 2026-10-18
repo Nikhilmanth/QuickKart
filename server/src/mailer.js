@@ -147,18 +147,29 @@ export async function sendMail({ to, subject, html, text }) {
   const user = (process.env.EMAIL_USER || '').trim();
   const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 
-  // Attempt 1: Port 465 (Direct SSL) with strict IPv4 - fast & rock solid on Linux cloud hosts
+  let ipv4Host = 'smtp.gmail.com';
+  try {
+    const addresses = await dns.promises.resolve4('smtp.gmail.com');
+    if (addresses && addresses.length > 0) {
+      ipv4Host = addresses[0];
+    }
+  } catch (dnsErr) {
+    console.warn('[DNS resolve4 fallback]:', dnsErr.message);
+  }
+
+  // Attempt 1: Port 465 (Direct SSL) with strict IPv4 address
   try {
     const transporter465 = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host: ipv4Host,
       port: 465,
       secure: true,
-      family: 4, // Enforce IPv4
-      lookup: lookupIPv4, // Force DNS resolver to return only IPv4
       auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
+      tls: {
+        servername: 'smtp.gmail.com',
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
       socketTimeout: 15000,
     });
 
@@ -178,15 +189,17 @@ export async function sendMail({ to, subject, html, text }) {
     // Attempt 2: Port 587 (STARTTLS) with strict IPv4 fallback
     try {
       const transporter587 = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
+        host: ipv4Host,
         port: 587,
         secure: false,
         requireTLS: true,
-        family: 4, // Enforce IPv4
         auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
+        tls: {
+          servername: 'smtp.gmail.com',
+          rejectUnauthorized: false,
+        },
+        connectionTimeout: 12000,
+        greetingTimeout: 12000,
         socketTimeout: 15000,
       });
 

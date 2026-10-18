@@ -111,7 +111,6 @@ export default function Login() {
   
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpValidity, setOtpValidity] = useState(60);
-  const [devOtpHint, setDevOtpHint] = useState('');
   const [activeModal, setActiveModal] = useState(null); // 'terms' | 'privacy' | null
   const timerRef = useRef(null);
 
@@ -180,12 +179,7 @@ export default function Login() {
     try {
       if (authMethod === 'email') {
         const trimmedEmail = email.trim().toLowerCase();
-        const res = await api.post('/auth/email/send-otp', { email: trimmedEmail });
-        if (res?.devCode) {
-          setDevOtpHint(res.devCode);
-        } else {
-          setDevOtpHint('');
-        }
+        await api.post('/auth/email/send-otp', { email: trimmedEmail });
       } else {
         await sendPhoneOtp(`+91${phone}`);
       }
@@ -317,7 +311,7 @@ export default function Login() {
                 className={`blinkit-tab ${authMethod === 'phone' ? 'active' : ''}`}
                 onClick={() => switchMethod('phone')}
               >
-                📱 Mobile SMS
+                📱 Mobile SMS <span className="tab-badge-soon">SOON</span>
               </button>
             </div>
 
@@ -367,54 +361,32 @@ export default function Login() {
                 </button>
               </div>
             ) : (
-              <div className="blinkit-form-body">
-                {/* Mobile Input Field matching Photo 1 */}
-                <div className="blinkit-input-wrap">
-                  <div className="blinkit-input-prefix">+91</div>
-                  <input
-                    type="tel"
-                    id="phone-input"
-                    className="blinkit-input-field"
-                    placeholder="Enter mobile number"
-                    maxLength={10}
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value.replace(/\D/g, ''));
-                      if (err) setErr('');
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && isInputFilled && handleSendOtp()}
-                    autoFocus
-                  />
-                </div>
+              <div className="blinkit-coming-soon-card">
+                <span className="coming-soon-badge">🚀 Feature Coming Soon</span>
+                <div className="coming-soon-icon">📲</div>
+                <h3 className="coming-soon-title">Mobile SMS OTP</h3>
+                <p className="coming-soon-desc">
+                  Direct telecom SMS and WhatsApp OTP integration is currently rolling out. In the meantime, please use <strong>Email OTP</strong> for instant, real email delivery!
+                </p>
 
-                <div className="blinkit-input-wrap" style={{ marginTop: 12 }}>
-                  <input
-                    type="text"
-                    className="blinkit-input-field"
-                    placeholder="Your Name (Optional)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && isInputFilled && handleSendOtp()}
-                  />
-                </div>
-
-                {!fbReady && (
-                  <div className="blinkit-info-pill">
-                    💡 SMS Gateway upgrading. Tap <strong>Email OTP</strong> above for instant verification!
+                <div className="coming-soon-features">
+                  <div className="coming-soon-feature-item">
+                    <span>⚡</span> <span>Instant OTP sent straight to your email inbox</span>
                   </div>
-                )}
+                  <div className="coming-soon-feature-item">
+                    <span>🔒</span> <span>100% secure one-click session activation</span>
+                  </div>
+                  <div className="coming-soon-feature-item">
+                    <span>🆓</span> <span>Completely free with 1-minute high-security code</span>
+                  </div>
+                </div>
 
-                {err && <div className="blinkit-err-banner">{err}</div>}
-
-                {/* Continue Button matching Photo 1 */}
                 <button
                   type="button"
-                  id="send-otp-btn"
                   className="blinkit-continue-btn"
-                  disabled={busy || !isInputFilled}
-                  onClick={handleSendOtp}
+                  onClick={() => switchMethod('email')}
                 >
-                  {busy ? 'Sending OTP…' : 'Continue'}
+                  ✉️ Continue with Email OTP (Instant)
                 </button>
               </div>
             )}
@@ -440,22 +412,6 @@ export default function Login() {
                 {authMethod === 'email' ? email : `+91-${phone}`}
               </span>
             </p>
-
-            {devOtpHint && (
-              <div style={{
-                background: '#f0fdf4',
-                border: '1.5px dashed #0c831f',
-                borderRadius: 12,
-                padding: '8px 14px',
-                textAlign: 'center',
-                margin: '0 auto 14px',
-                maxWidth: 320,
-              }}>
-                <span style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
-                  💡 Verification Code: <strong style={{ letterSpacing: 2, fontSize: 15, color: '#0c831f' }}>{devOtpHint}</strong>
-                </span>
-              </div>
-            )}
 
             {/* Segmented OTP Boxes matching Photo 2 */}
             <SegmentedOtpInput

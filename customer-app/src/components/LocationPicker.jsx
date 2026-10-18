@@ -138,19 +138,37 @@ export default function LocationPicker({ onClose }) {
    * 2. Short 2s reverse geocode timeout with immediate fallback so user NEVER waits
    */
   const detectFastLocation = () => {
-    if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by your browser');
-      return;
-    }
     setDetecting(true);
 
-    const geoTimeout = setTimeout(() => {
-      setDetecting(false);
+    const fallbackIpLocation = async () => {
+      try {
+        const res = await fetch('https://ipwho.is/');
+        const d = await res.json();
+        if (d && d.success && d.city) {
+          const addr = `${d.city}, ${d.region || d.country}`;
+          selectAddress(
+            {
+              id: 'current-loc',
+              label: 'Current location',
+              address: addr,
+              lat: d.latitude,
+              lng: d.longitude,
+              type: 'other',
+              icon: '📍',
+            },
+            'Current location detected 📍'
+          );
+          setDetecting(false);
+          return;
+        }
+      } catch (_) {}
+
+      // Graceful fallback to default delivery hub if IP lookup fails
       selectAddress(
         {
           id: 'current-loc',
           label: 'Current location',
-          address: 'Current Location (Near SRM NCR Campus, Modinagar)',
+          address: 'Current Location (SRM NCR Campus, Modinagar)',
           lat: 28.753,
           lng: 77.497,
           type: 'other',
@@ -158,18 +176,23 @@ export default function LocationPicker({ onClose }) {
         },
         'Current location detected 📍'
       );
-    }, 2800);
+      setDetecting(false);
+    };
+
+    if (!navigator.geolocation) {
+      fallbackIpLocation();
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
-        clearTimeout(geoTimeout);
         const lat = coords.latitude;
         const lng = coords.longitude;
         let formatted = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
         try {
           const controller = new AbortController();
-          const abortId = setTimeout(() => controller.abort(), 1200);
+          const abortId = setTimeout(() => controller.abort(), 2500);
           const res = await fetch(
             `${NOMINATIM}/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
             { signal: controller.signal }
@@ -198,19 +221,19 @@ export default function LocationPicker({ onClose }) {
         );
       },
       (err) => {
-        clearTimeout(geoTimeout);
-        setDetecting(false);
         // Fallback gracefully on permission denial
         if (err.code === 1) {
+          setDetecting(false);
           showToast('Location permission denied — select from saved addresses');
         } else {
-          showToast('Could not fetch exact GPS location');
+          // If GPS times out on first try, seamlessly fallback to IP geolocation
+          fallbackIpLocation();
         }
       },
       {
-        enableHighAccuracy: false, // Instant resolution, no waiting on GPS hardware
-        timeout: 2500,
-        maximumAge: 60000,
+        enableHighAccuracy: false, // Fast resolution without waiting on GPS hardware
+        timeout: 8000, // 8 seconds gives enough time for browser prompt on first click
+        maximumAge: 300000, // 5 min cached coordinates resolve instantly
       }
     );
   };

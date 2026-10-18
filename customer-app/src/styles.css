@@ -2709,3 +2709,74 @@ iframe[srcdoc*="Netlify"],
   margin-top: 10px;
 }
 
+/* Mobile Coming Soon Card */
+.tab-badge-soon {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 5px;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.blinkit-coming-soon-card {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  margin-top: 8px;
+}
+.coming-soon-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+.coming-soon-icon {
+  font-size: 44px;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+.coming-soon-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+.coming-soon-desc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+.coming-soon-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+}
+.coming-soon-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+  font-weight: 600;
+}
+
+

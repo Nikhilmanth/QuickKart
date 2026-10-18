@@ -11,30 +11,30 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: RAZORPAY_KEY_ID
-        value: "rzp_test_TUKDWG6ZpfPdaB"
+        sync: false
       - key: RAZORPAY_KEY_SECRET
-        value: "0d2bAdnppryOx740XxejUPuQ"
+        sync: false
       - key: FIREBASE_API_KEY
-        value: "AIzaSyCmjRWTWSEZ3tPlM43WtE7Iaox14ycGdf8"
+        sync: false
       - key: FIREBASE_AUTH_DOMAIN
-        value: "blinkit2006.firebaseapp.com"
+        sync: false
       - key: FIREBASE_PROJECT_ID
-        value: "blinkit2006"
+        sync: false
       - key: FIREBASE_APP_ID
-        value: "1:456331646683:web:d937af301ca41e541d5efe"
+        sync: false
       - key: ADMIN_PHONE
-        value: "8003784724"
+        sync: false
       - key: ADMIN_EMAIL
-        value: "quickkartclone@gmail.com"
+        sync: false
       - key: JWT_SECRET
-        value: "quickkart-super-secret-change-me-8842"
+        sync: false
       - key: EMAIL_HOST
         value: "smtp.gmail.com"
       - key: EMAIL_PORT
-        value: "587"
+        value: "465"
       - key: EMAIL_USER
-        value: "quickkartclone@gmail.com"
+        sync: false
       - key: EMAIL_PASS
-        value: "vevwfuktenheoeva"
+        sync: false
       - key: EMAIL_FROM
-        value: "QuickKart <quickkartclone@gmail.com>"
+        sync: false
